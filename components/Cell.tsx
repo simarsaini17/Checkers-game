@@ -11,7 +11,11 @@ interface EachCellProps {
 export const Cell = ({ id, odd, validMove, x, y, children }: EachCellProps) => {
   const { isOver, setNodeRef } = useDroppable({ id });
   return (
-    <div className={`${odd ? "bg-amber-700" : "bg-amber-200"} w-20 h-20`}>
+    <div
+      className={`${
+        odd ? "bg-amber-700" : "bg-amber-200"
+      } w-20 h-20 flex justify-center items-center`}
+    >
       {children}
     </div>
   );
