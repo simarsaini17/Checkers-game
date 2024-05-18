@@ -2,26 +2,112 @@ import { useCallback, useState } from "react";
 import { generateBoard, generateBoardPieces } from "./utils/board";
 import { BoardConatiner } from "./BoardConatiner";
 import { Cell } from "./Cell";
-import { Piece, PieceProps } from "./Pieces/Picese";
-import { DndContext } from "@dnd-kit/core";
+import Piece, { PieceProps } from "./Pieces/Picese";
+import { DndContext, DragStartEvent } from "@dnd-kit/core";
 
 export const Board = () => {
   const [board] = useState(generateBoard());
-  const [movingPiece, setMovingPiece] = useState(true);
+  const [movingPiece, setMovingPiece] = useState<PieceProps | null>(null);
   const [pieces, setBoardPieces] = useState(() => generateBoardPieces(board));
-  const [isfirstPlayerTurn, setFirstPlayerTurn] = useState(true);
+  const [isFirstPlayerTurn, setFirstPlayerTurn] = useState(true);
   const [firstPlayerScore, setFirstPlayerScore] = useState(0);
   const [secondPlayerScore, setSecondPlayerScore] = useState(0);
+  const [winner, setWinner] = useState(undefined);
 
   const isValidMove = useCallback(
     (
-      isfirstPlayerTurn: boolean,
+      isFirstPlayerTurn: boolean,
       isFirstPlayerPiece: boolean,
       movingPiece: PieceProps,
       moveX: number,
       moveY: number
-    ) => {},
-    []
+    ) => {
+      const movingPiecePosition = movingPiece.position;
+      const { x: moveFromX, y: moveFromY } = movingPiecePosition;
+
+      if (isFirstPlayerTurn && isFirstPlayerPiece && movingPiecePosition) {
+        if (moveFromX - 1 >= 0 && moveFromX <= 6) {
+          const piece = pieces[moveFromX + 1][moveFromY - 1];
+          if (piece && !piece.odd) {
+            const placesToGo = pieces[moveFromX + 2][moveFromY - 2];
+            if (
+              placesToGo === undefined &&
+              moveX === moveFromX + 2 &&
+              moveY === moveFromY - 2
+            ) {
+              return { canMove: true, canRemove: true, isLeft: true };
+            }
+
+            if (!piece && moveX === moveFromX + 1 && moveY === moveFromY - 1) {
+              return { canMove: true };
+            }
+          }
+        }
+
+        if (moveFromY + 1 <= 7 && moveFromX <= 6) {
+          const piece = pieces[moveFromX + 1][moveFromY + 1];
+
+          if (piece && !piece.odd) {
+            const placesToGo = pieces[moveFromX + 2][moveFromY + 2];
+            if (
+              placesToGo === undefined &&
+              moveX === moveFromX + 2 &&
+              moveY === moveFromY + 2
+            ) {
+              return { canMove: true, canRemove: true, isRight: true };
+            }
+
+            if (
+              piece === undefined &&
+              moveX === moveFromX + 1 &&
+              moveY === moveFromY + 1
+            ) {
+              return { canMove: true };
+            }
+          }
+        }
+      } else if (
+        !isFirstPlayerTurn &&
+        !isFirstPlayerPiece &&
+        movingPiecePosition
+      ) {
+        if (moveFromX - 1 >= 0) {
+          const piece = pieces[moveFromX - 1][moveFromY - 1];
+          if (piece && piece.odd && moveFromX - 2 >= 0) {
+            const placesToGo = pieces[moveFromX - 2][moveFromY - 2];
+            if (
+              placesToGo === undefined &&
+              moveX === moveFromX - 2 &&
+              moveY === moveFromY - 2
+            ) {
+              return { canMove: true, canRemove: true, isLeft: true };
+            }
+
+            if (!piece && moveX === moveFromX - 1 && moveY === moveFromY - 1) {
+              return { canMove: true };
+            }
+          }
+        }
+        if (moveFromY + 1 <= 7 && moveFromX - 1 >= 0) {
+          const piece = pieces[moveFromX - 1][moveFromY - 1];
+          if (piece && piece.odd && moveFromX - 2 >= 0) {
+            const placesToGo = pieces[moveFromX - 2][moveFromY + 2];
+            if (
+              placesToGo === undefined &&
+              moveX === moveFromX - 2 &&
+              moveFromY - 2
+            ) {
+              return { canMove: true, canRemove: true, isRight: true };
+            }
+
+            if (!piece && moveX === moveFromX - 1 && moveY === moveFromY + 1) {
+              return { canMove: true };
+            }
+          }
+        }
+      }
+    },
+    [pieces]
   );
 
   const movePiece = useCallback(
@@ -55,11 +141,21 @@ export const Board = () => {
     [pieces]
   );
 
-  const dragPiece = () => {};
+  const dragPiece = ({ active }: DragStartEvent) => {
+    const piece = pieces.reduce<PieceProps | undefined>((acc, row) => {
+      return acc ?? row.find((cell) => cell.id === active.id);
+    }, undefined);
+
+    if (piece) {
+      setMovingPiece(piece);
+    }
+  };
 
   const dragFinished = () => {};
 
-  const cancelDragPiece = () => {};
+  const cancelDragPiece = () => {
+    setMovingPiece(null);
+  };
 
   return (
     <DndContext
