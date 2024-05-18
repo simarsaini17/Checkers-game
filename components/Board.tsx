@@ -28,12 +28,11 @@ export const Board = () => {
       moveX: number,
       moveY: number
     ) => {
-      const movingPiecePosition = movingPiece.position;
-
       // Check valid positions piece move positions for first player
 
-      if (isFirstPlayerTurn && isFirstPlayerPiece && movingPiecePosition) {
-        const { x: moveFromX, y: moveFromY } = movingPiecePosition;
+      if (isFirstPlayerTurn && isFirstPlayerPiece && movingPiece.position) {
+        console.log("I am here");
+        const { x: moveFromX, y: moveFromY } = movingPiece.position;
 
         if (moveFromX - 1 >= 0 && moveFromX <= 6) {
           const piece = pieces[moveFromX + 1][moveFromY - 1];
@@ -52,6 +51,8 @@ export const Board = () => {
             return { canMove: true };
           }
         }
+
+        // check valid move at right
 
         if (moveFromY + 1 <= 7 && moveFromX <= 6) {
           const piece = pieces[moveFromX + 1][moveFromY + 1];
@@ -92,7 +93,11 @@ export const Board = () => {
             }
           }
 
-          if (!piece && moveX === moveFromX + 1 && moveY === moveFromY - 1) {
+          if (
+            piece === undefined &&
+            moveX === moveFromX + 1 &&
+            moveY === moveFromY - 1
+          ) {
             return { canMove: true };
           }
         }
@@ -101,9 +106,9 @@ export const Board = () => {
       else if (
         !isFirstPlayerTurn &&
         !isFirstPlayerPiece &&
-        movingPiecePosition
+        movingPiece.position
       ) {
-        const { x: moveFromX, y: moveFromY } = movingPiecePosition;
+        const { x: moveFromX, y: moveFromY } = movingPiece.position;
 
         if (moveFromX - 1 >= 0) {
           const piece = pieces[moveFromX - 1][moveFromY - 1];
@@ -216,9 +221,11 @@ export const Board = () => {
         isFirstPlayerTurn,
         movingPiece.odd,
         movingPiece,
-        movingPieceX,
-        movingPieceY
+        moveToX,
+        moveToY
       );
+
+      console.log(canMove);
 
       if (canMove && !canRemove) {
         if (pieces[moveToX][moveToY]) {
@@ -232,6 +239,8 @@ export const Board = () => {
           movingPieceX,
           movingPieceY
         );
+
+        console.log(newPieces);
 
         setFirstPlayerTurn(!isFirstPlayerTurn);
 
