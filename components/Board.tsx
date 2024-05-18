@@ -2,8 +2,14 @@ import { useCallback, useState } from "react";
 import { generateBoard, generateBoardPieces } from "./utils/board";
 import { BoardConatiner } from "./BoardConatiner";
 import { Cell } from "./Cell";
-import Piece, { PieceProps } from "./Pieces/Picese";
-import { DndContext, DragStartEvent } from "@dnd-kit/core";
+import { Piece, PieceProps } from "./Pieces/Piece";
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+} from "@dnd-kit/core";
+import { DraggablePiece } from "./Pieces/DraggablePiece";
 
 export const Board = () => {
   const [board] = useState(generateBoard());
@@ -23,9 +29,9 @@ export const Board = () => {
       moveY: number
     ) => {
       const movingPiecePosition = movingPiece.position;
-      const { x: moveFromX, y: moveFromY } = movingPiecePosition;
 
       if (isFirstPlayerTurn && isFirstPlayerPiece && movingPiecePosition) {
+        const { x: moveFromX, y: moveFromY } = movingPiecePosition;
         if (moveFromX - 1 >= 0 && moveFromX <= 6) {
           const piece = pieces[moveFromX + 1][moveFromY - 1];
           if (piece && !piece.odd) {
@@ -71,6 +77,7 @@ export const Board = () => {
         !isFirstPlayerPiece &&
         movingPiecePosition
       ) {
+        const { x: moveFromX, y: moveFromY } = movingPiecePosition;
         if (moveFromX - 1 >= 0) {
           const piece = pieces[moveFromX - 1][moveFromY - 1];
           if (piece && piece.odd && moveFromX - 2 >= 0) {
@@ -106,6 +113,7 @@ export const Board = () => {
           }
         }
       }
+      return { canMove: false };
     },
     [pieces]
   );
@@ -141,9 +149,9 @@ export const Board = () => {
     [pieces]
   );
 
-  const dragPiece = ({ active }: DragStartEvent) => {
+  const handleDragPieceStart = ({ active }: DragStartEvent) => {
     const piece = pieces.reduce<PieceProps | undefined>((acc, row) => {
-      return acc ?? row.find((cell) => cell.id === active.id);
+      return acc ?? row.find((cell) => cell?.id === active.id);
     }, undefined);
 
     if (piece) {
@@ -151,31 +159,135 @@ export const Board = () => {
     }
   };
 
-  const dragFinished = () => {};
+  const handleDragFinished = useCallback((event: DragEndEvent) => {
+    if (!movingPiece?.position || !event.over?.id) {
+      return;
+    }
 
-  const cancelDragPiece = () => {
+    const { x: movingPieceX, y: movingPieceY } = movingPiece.position;
+    const [moveToX, moveToY] = event.over.id.toString().split("-").map(Number);
+
+    const { canMove, canRemove, isRight } = isValidMove(
+      isFirstPlayerTurn,
+      movingPiece.odd,
+      movingPiece,
+      movingPieceX,
+      movingPieceY
+    );
+
+    if (canMove && !canRemove) {
+      if (pieces[moveToX][moveToY]) {
+        return;
+      }
+
+      const newPieces = movePiece(
+        moveToX,
+        moveToY,
+        movingPiece,
+        movingPieceX,
+        movingPieceY
+      );
+
+      setFirstPlayerTurn(!isFirstPlayerTurn);
+      setBoardPieces(newPieces);
+    }
+
+    if (canMove && canRemove) {
+      let grabEnemy: undefined[] = [];
+
+      if (movingPiece.odd) {
+        if (isRight) {
+          grabEnemy = [
+            (pieces[movingPieceX + 1][movingPieceY + 1] = undefined),
+          ];
+        } else {
+          grabEnemy = [
+            (pieces[movingPieceX + 1][movingPieceY - 1] = undefined),
+          ];
+        }
+        setFirstPlayerScore(firstPlayerScore + 1);
+      }
+
+      if (!movingPiece.odd) {
+        if (isRight) {
+          grabEnemy = [
+            (pieces[movingPieceX - 1][movingPieceY + 1] = undefined),
+          ];
+        } else {
+          grabEnemy = [
+            (pieces[movingPieceX - 1][movingPieceY - 1] = undefined),
+          ];
+        }
+        setSecondPlayerScore(secondPlayerScore + 1);
+      }
+
+      const newPieces = movePiece(
+        moveToX,
+        moveToY,
+        movingPiece,
+        movingPieceX,
+        movingPieceY
+      );
+
+      setBoardPieces([...newPieces, grabEnemy]);
+      setFirstPlayerTurn(!isFirstPlayerTurn);
+    }
+    setMovingPiece(null);
+  }, []);
+
+  const handleCancelDrag = () => {
     setMovingPiece(null);
   };
 
   return (
     <DndContext
-      id="gameBoard"
-      onDragStart={dragPiece}
-      onDragEnd={dragFinished}
-      onDragCancel={cancelDragPiece}
+      id="board"
+      onDragStart={handleDragPieceStart}
+      onDragEnd={handleDragFinished}
+      onDragCancel={handleCancelDrag}
     >
       <BoardConatiner>
         {board.map((eachRow, x) => {
           return eachRow.map((eachCol, y) => {
             const piece = pieces[x][y];
+            const disabled =
+              (piece?.odd && !isFirstPlayerTurn) ||
+              (!piece?.odd && isFirstPlayerTurn);
+
+            if (!piece) {
+              const canDropPiece = movingPiece
+                ? isValidMove(
+                    isFirstPlayerTurn,
+                    movingPiece.odd,
+                    movingPiece,
+                    x,
+                    y
+                  ).canMove
+                : false;
+              return (
+                <Cell key={eachCol.id} validMove={canDropPiece} {...eachCol} />
+              );
+            }
+
+            const pieceMarkup = disabled ? (
+              <Piece {...piece} disabled />
+            ) : (
+              <DraggablePiece {...piece} />
+            );
+
             return (
-              <Cell key={eachCol.id} validMove={true} {...eachCol}>
-                {piece && <Piece {...piece} />}
+              <Cell key={eachCol.id} {...eachCol}>
+                {pieceMarkup}
               </Cell>
             );
           });
         })}
       </BoardConatiner>
+      <DragOverlay dropAnimation={null}>
+        {movingPiece === null ? null : (
+          <Piece odd={movingPiece?.odd} id={movingPiece.id} />
+        )}
+      </DragOverlay>
     </DndContext>
   );
 };
