@@ -11,6 +11,7 @@ import {
 } from "@dnd-kit/core";
 import { DraggablePiece } from "./Pieces/DraggablePiece";
 import { ScoreBoard } from "./ScoreBoard";
+import { Turn } from "./Turn";
 
 export const Board = () => {
   const [board, setGameBoard] = useState(generateBoard());
@@ -29,9 +30,9 @@ export const Board = () => {
       moveX: number,
       moveY: number
     ) => {
-      // Check valid positions piece move positions for first player
       const movingPiecePosition = movingPiece.position;
 
+      // Check valid positions piece move positions for first player
       if (isFirstPlayerTurn && isFirstPlayerPiece && movingPiecePosition) {
         const { x: moveFromX, y: moveFromY } = movingPiecePosition;
 
@@ -189,6 +190,7 @@ export const Board = () => {
   // then set the current moving piece to the active dragging piece
 
   const handleDragPieceStart = ({ active }: DragStartEvent) => {
+    console.log(active);
     // get the active piece from the list of pieces
     const piece = pieces.reduce<PieceProps | undefined>((acc, row) => {
       return acc ?? row.find((cell) => cell?.id === active.id);
@@ -310,6 +312,7 @@ export const Board = () => {
       onDragEnd={handleDragFinished}
       onDragCancel={handleCancelDrag}
     >
+      <Turn isFirstPlayerTurn={isFirstPlayerTurn} />
       <ScoreBoard
         firstPlayerScore={firstPlayerScore}
         secondPlayerScore={secondPlayerScore}
