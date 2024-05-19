@@ -10,6 +10,7 @@ import {
   DragStartEvent,
 } from "@dnd-kit/core";
 import { DraggablePiece } from "./Pieces/DraggablePiece";
+import { ScoreBoard } from "./ScoreBoard";
 
 export const Board = () => {
   const [board] = useState(generateBoard());
@@ -29,10 +30,10 @@ export const Board = () => {
       moveY: number
     ) => {
       // Check valid positions piece move positions for first player
+      const movingPiecePosition = movingPiece.position;
 
-      if (isFirstPlayerTurn && isFirstPlayerPiece && movingPiece.position) {
-        console.log("I am here");
-        const { x: moveFromX, y: moveFromY } = movingPiece.position;
+      if (isFirstPlayerTurn && isFirstPlayerPiece && movingPiecePosition) {
+        const { x: moveFromX, y: moveFromY } = movingPiecePosition;
 
         if (moveFromX - 1 >= 0 && moveFromX <= 6) {
           const piece = pieces[moveFromX + 1][moveFromY - 1];
@@ -82,22 +83,18 @@ export const Board = () => {
           let piece = pieces[moveFromX + 1][moveFromY - 1];
 
           if (piece && !piece.odd) {
-            const placesToGo = piece[moveFromX + 2][moveFromY - 2];
+            const placesToGo = pieces[moveFromX + 2][moveFromY - 2];
 
             if (
               placesToGo === undefined &&
               moveX === moveFromX + 2 &&
-              moveFromY === moveFromY - 2
+              moveY === moveFromY - 2
             ) {
               return { canMove: true, canRemove: true, isLeft: true };
             }
           }
 
-          if (
-            piece === undefined &&
-            moveX === moveFromX + 1 &&
-            moveY === moveFromY - 1
-          ) {
+          if (!piece && moveX === moveFromX + 1 && moveY === moveFromY - 1) {
             return { canMove: true };
           }
         }
@@ -106,16 +103,15 @@ export const Board = () => {
       else if (
         !isFirstPlayerTurn &&
         !isFirstPlayerPiece &&
-        movingPiece.position
+        movingPiecePosition
       ) {
-        const { x: moveFromX, y: moveFromY } = movingPiece.position;
+        const { x: moveFromX, y: moveFromY } = movingPiecePosition;
 
         if (moveFromX - 1 >= 0) {
           const piece = pieces[moveFromX - 1][moveFromY - 1];
 
           if (piece && piece.odd && moveFromX - 2 >= 0) {
             const placesToGo = pieces[moveFromX - 2][moveFromY - 2];
-
             if (
               placesToGo === undefined &&
               moveX === moveFromX - 2 &&
@@ -131,15 +127,14 @@ export const Board = () => {
         }
 
         if (moveFromY + 1 <= 7 && moveFromX - 1 >= 0) {
-          const piece = pieces[moveFromX - 1][moveFromY - 1];
+          const piece = pieces[moveFromX - 1][moveFromY + 1];
 
           if (piece && piece.odd && moveFromX - 2 >= 0) {
             const placesToGo = pieces[moveFromX - 2][moveFromY + 2];
-
             if (
               placesToGo === undefined &&
               moveX === moveFromX - 2 &&
-              moveFromY - 2
+              moveY === moveFromY + 2
             ) {
               return { canMove: true, canRemove: true, isRight: true };
             }
@@ -169,7 +164,6 @@ export const Board = () => {
         position: { x: moveX, y: moveY },
         disabled: false,
       };
-      console.log("I am ger", findPiece);
 
       const newPosition = [(pieces[moveX][moveY] = findPiece)];
 
@@ -225,8 +219,6 @@ export const Board = () => {
         moveToY
       );
 
-      console.log(canMove);
-
       if (canMove && !canRemove) {
         if (pieces[moveToX][moveToY]) {
           return;
@@ -239,8 +231,6 @@ export const Board = () => {
           movingPieceX,
           movingPieceY
         );
-
-        console.log(newPieces);
 
         setFirstPlayerTurn(!isFirstPlayerTurn);
 
@@ -311,6 +301,10 @@ export const Board = () => {
       onDragEnd={handleDragFinished}
       onDragCancel={handleCancelDrag}
     >
+      <ScoreBoard
+        firstPlayerScore={firstPlayerScore}
+        secondPlayerScore={secondPlayerScore}
+      />
       <BoardConatiner>
         {board.map((eachRow, x) => {
           return eachRow.map((eachCol, y) => {
