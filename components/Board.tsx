@@ -13,7 +13,7 @@ import { DraggablePiece } from "./Pieces/DraggablePiece";
 import { ScoreBoard } from "./ScoreBoard";
 
 export const Board = () => {
-  const [board] = useState(generateBoard());
+  const [board, setGameBoard] = useState(generateBoard());
   const [movingPiece, setMovingPiece] = useState<PieceProps | null>(null);
   const [pieces, setBoardPieces] = useState(() => generateBoardPieces(board));
   const [isFirstPlayerTurn, setFirstPlayerTurn] = useState(true);
@@ -294,6 +294,15 @@ export const Board = () => {
     setMovingPiece(null);
   };
 
+  const resetGame = () => {
+    setGameBoard(generateBoard());
+    setBoardPieces(() => generateBoardPieces(board));
+    setFirstPlayerScore(0);
+    setSecondPlayerScore(0);
+    setFirstPlayerTurn(true);
+    setMovingPiece(null);
+  };
+
   return (
     <DndContext
       id="board"
@@ -347,6 +356,9 @@ export const Board = () => {
           <Piece odd={movingPiece?.odd} clone id={movingPiece.id} />
         )}
       </DragOverlay>
+      <button className="restart" id="reset" onClick={resetGame}>
+        Start a new Game
+      </button>
     </DndContext>
   );
 };
