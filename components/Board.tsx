@@ -12,6 +12,13 @@ import {
 import { DraggablePiece } from "./Pieces/DraggablePiece";
 import { ScoreBoard } from "./ScoreBoard";
 import { Turn } from "./Turn";
+import { RestartGameButton } from "./Button/RestartGameButton";
+import { Modal } from "./Modal";
+
+export type winnerType = {
+  isWinner: boolean;
+  winnerText: string;
+};
 
 export const Board = () => {
   const [board, setGameBoard] = useState(generateBoard());
@@ -20,7 +27,7 @@ export const Board = () => {
   const [isFirstPlayerTurn, setFirstPlayerTurn] = useState(true);
   const [firstPlayerScore, setFirstPlayerScore] = useState(0);
   const [secondPlayerScore, setSecondPlayerScore] = useState(0);
-  const [winner, setWinner] = useState(undefined);
+  const [winner, setWinner] = useState<winnerType | null>(null);
 
   const isValidMove = useCallback(
     (
@@ -31,118 +38,56 @@ export const Board = () => {
       moveY: number
     ) => {
       const movingPiecePosition = movingPiece.position;
+      const isKing = movingPiece.king;
 
-      // Check valid positions piece move positions for first player
-      if (isFirstPlayerTurn && isFirstPlayerPiece && movingPiecePosition) {
+      // Check valid positions to move
+      if (movingPiecePosition) {
         const { x: moveFromX, y: moveFromY } = movingPiecePosition;
+        const direction = isFirstPlayerTurn ? 1 : -1;
 
-        if (moveFromX - 1 >= 0 && moveFromX <= 6) {
-          const piece = pieces[moveFromX + 1][moveFromY - 1];
+        const moves = [
+          { x: moveFromX + direction, y: moveFromY - 1 },
+          { x: moveFromX + direction, y: moveFromY + 1 },
+        ];
+        const captures = [
+          { x: moveFromX + 2 * direction, y: moveFromY - 2 },
+          { x: moveFromX + 2 * direction, y: moveFromY + 2 },
+        ];
 
-          if (piece && !piece.odd) {
-            const placesToGo = pieces[moveFromX + 2][moveFromY - 2];
-            if (
-              placesToGo === undefined &&
-              moveX === moveFromX + 2 &&
-              moveY === moveFromY - 2
-            ) {
-              return { canMove: true, canRemove: true, isLeft: true };
-            }
-          }
-          if (!piece && moveX === moveFromX + 1 && moveY === moveFromY - 1) {
-            return { canMove: true };
-          }
+        if (isKing) {
+          moves.push(
+            { x: moveFromX - direction, y: moveFromY - 1 },
+            { x: moveFromX - direction, y: moveFromY + 1 }
+          );
+          captures.push(
+            { x: moveFromX - 2 * direction, y: moveFromY - 2 },
+            { x: moveFromX - 2 * direction, y: moveFromY + 2 }
+          );
         }
 
-        // check valid move at right
-
-        if (moveFromY + 1 <= 7 && moveFromX <= 6) {
-          const piece = pieces[moveFromX + 1][moveFromY + 1];
-
-          if (piece && !piece.odd) {
-            const placesToGo = pieces[moveFromX + 2][moveFromY + 2];
-
-            if (
-              placesToGo === undefined &&
-              moveX === moveFromX + 2 &&
-              moveY === moveFromY + 2
-            ) {
-              return { canMove: true, canRemove: true, isRight: true };
-            }
-          }
-
+        // Check regular moves
+        for (let move of moves) {
           if (
-            piece === undefined &&
-            moveX === moveFromX + 1 &&
-            moveY === moveFromY + 1
+            moveX === move.x &&
+            moveY === move.y &&
+            !pieces[move.x]?.[move.y]
           ) {
             return { canMove: true };
           }
         }
 
-        if (moveFromX === 0) {
-          let piece = pieces[moveFromX + 1][moveFromY - 1];
-
-          if (piece && !piece.odd) {
-            const placesToGo = pieces[moveFromX + 2][moveFromY - 2];
-
-            if (
-              placesToGo === undefined &&
-              moveX === moveFromX + 2 &&
-              moveY === moveFromY - 2
-            ) {
-              return { canMove: true, canRemove: true, isLeft: true };
-            }
-          }
-
-          if (!piece && moveX === moveFromX + 1 && moveY === moveFromY - 1) {
-            return { canMove: true };
-          }
-        }
-      }
-      // check valid move for second player
-      else if (
-        !isFirstPlayerTurn &&
-        !isFirstPlayerPiece &&
-        movingPiecePosition
-      ) {
-        const { x: moveFromX, y: moveFromY } = movingPiecePosition;
-
-        if (moveFromX - 1 >= 0) {
-          const piece = pieces[moveFromX - 1][moveFromY - 1];
-
-          if (piece && piece.odd && moveFromX - 2 >= 0) {
-            const placesToGo = pieces[moveFromX - 2][moveFromY - 2];
-            if (
-              placesToGo === undefined &&
-              moveX === moveFromX - 2 &&
-              moveY === moveFromY - 2
-            ) {
-              return { canMove: true, canRemove: true, isLeft: true };
-            }
-          }
-
-          if (!piece && moveX === moveFromX - 1 && moveY === moveFromY - 1) {
-            return { canMove: true };
-          }
-        }
-
-        if (moveFromY + 1 <= 7 && moveFromX - 1 >= 0) {
-          const piece = pieces[moveFromX - 1][moveFromY + 1];
-
-          if (piece && piece.odd && moveFromX - 2 >= 0) {
-            const placesToGo = pieces[moveFromX - 2][moveFromY + 2];
-            if (
-              placesToGo === undefined &&
-              moveX === moveFromX - 2 &&
-              moveY === moveFromY + 2
-            ) {
-              return { canMove: true, canRemove: true, isRight: true };
-            }
-          }
-
-          if (!piece && moveX === moveFromX - 1 && moveY === moveFromY + 1) {
-            return { canMove: true };
+        for (let capture of captures) {
+          const midX = (moveFromX + capture.x) / 2;
+          const midY = (moveFromY + capture.y) / 2;
+          const midPiece = pieces[midX]?.[midY];
+          if (
+            moveX === capture.x &&
+            moveY === capture.y &&
+            midPiece &&
+            midPiece.odd !== isFirstPlayerPiece &&
+            !pieces[capture.x]?.[capture.y]
+          ) {
+            return { canMove: true, canRemove: true, midX, midY };
           }
         }
       }
@@ -157,31 +102,26 @@ export const Board = () => {
       moveY: number,
       movingPiece: PieceProps,
       movingPieceX: number,
-      movingPieceY: number
+      movingPieceY: number,
+      king = false
     ) => {
-      const findPiece = {
+      const findPiece: PieceProps = {
         id: `${moveX}-${moveY}`,
         odd: movingPiece.odd,
         position: { x: moveX, y: moveY },
         disabled: false,
+        king: king || movingPiece.king,
       };
-
       const newPosition = [(pieces[moveX][moveY] = findPiece)];
-
-      const clearOriginalPosition = [
+      const cleanOriginalPosition = [
         (pieces[movingPieceX][movingPieceY] = undefined),
       ];
 
-      const updatedPiecesPosition = [
-        ...pieces,
-        newPosition,
-        clearOriginalPosition,
-      ];
+      const updatedPieces = [...pieces, newPosition, cleanOriginalPosition];
 
       // clear unused positions
-      updatedPiecesPosition.splice(8, 2);
-
-      return updatedPiecesPosition;
+      updatedPieces.splice(8, 2);
+      return updatedPieces;
     },
     [pieces]
   );
@@ -190,7 +130,6 @@ export const Board = () => {
   // then set the current moving piece to the active dragging piece
 
   const handleDragPieceStart = ({ active }: DragStartEvent) => {
-    console.log(active);
     // get the active piece from the list of pieces
     const piece = pieces.reduce<PieceProps | undefined>((acc, row) => {
       return acc ?? row.find((cell) => cell?.id === active.id);
@@ -203,9 +142,7 @@ export const Board = () => {
 
   const handleDragFinished = useCallback(
     (event: DragEndEvent) => {
-      if (!movingPiece?.position || !event.over?.id) {
-        return;
-      }
+      if (!movingPiece?.position || !event.over?.id) return;
 
       const { x: movingPieceX, y: movingPieceY } = movingPiece.position;
       const [moveToX, moveToY] = event.over.id
@@ -213,7 +150,7 @@ export const Board = () => {
         .split("-")
         .map(Number);
 
-      const { canMove, canRemove, isRight } = isValidMove(
+      const { canMove, canRemove, midX, midY } = isValidMove(
         isFirstPlayerTurn,
         movingPiece.odd,
         movingPiece,
@@ -221,64 +158,70 @@ export const Board = () => {
         moveToY
       );
 
-      if (canMove && !canRemove) {
-        if (pieces[moveToX][moveToY]) {
-          return;
-        }
-
-        const newPieces = movePiece(
+      if (canMove) {
+        let newPieces = movePiece(
           moveToX,
           moveToY,
           movingPiece,
           movingPieceX,
-          movingPieceY
+          movingPieceY,
+          moveToX === (movingPiece.odd ? 7 : 0)
         );
 
-        setFirstPlayerTurn(!isFirstPlayerTurn);
+        if (canRemove && midX !== undefined && midY !== undefined) {
+          newPieces[midX][midY] = undefined;
+          if (movingPiece.odd) {
+            setFirstPlayerScore(firstPlayerScore + 1);
+          } else {
+            setSecondPlayerScore(secondPlayerScore + 1);
+          }
+
+          const possibleMoreJump = [
+            isValidMove(
+              isFirstPlayerTurn,
+              movingPiece.odd,
+              { ...movingPiece, position: { x: moveToX, y: moveToY } },
+              moveToX + 2,
+              moveToY + 2
+            ),
+            isValidMove(
+              isFirstPlayerTurn,
+              movingPiece.odd,
+              { ...movingPiece, position: { x: moveToX, y: moveToY } },
+              moveToX + 2,
+              moveToY - 2
+            ),
+            isValidMove(
+              isFirstPlayerTurn,
+              movingPiece.odd,
+              { ...movingPiece, position: { x: moveToX, y: moveToY } },
+              moveToX - 2,
+              moveToY + 2
+            ),
+            isValidMove(
+              isFirstPlayerTurn,
+              movingPiece.odd,
+              { ...movingPiece, position: { x: moveToX, y: moveToY } },
+              moveToX - 2,
+              moveToY - 2
+            ),
+          ].find((jump) => jump.canMove && jump.canRemove);
+
+          if (possibleMoreJump?.canMove && possibleMoreJump?.canRemove) {
+            setMovingPiece({
+              ...movingPiece,
+              position: { x: moveToX, y: moveToY },
+            });
+            setBoardPieces(newPieces);
+            return;
+          }
+        }
 
         setBoardPieces(newPieces);
-      }
-
-      if (canMove && canRemove) {
-        let grabEnemy: undefined[] = [];
-
-        if (movingPiece.odd) {
-          if (isRight) {
-            grabEnemy = [
-              (pieces[movingPieceX + 1][movingPieceY + 1] = undefined),
-            ];
-          } else {
-            grabEnemy = [
-              (pieces[movingPieceX + 1][movingPieceY - 1] = undefined),
-            ];
-          }
-          setFirstPlayerScore(firstPlayerScore + 1);
-        }
-
-        if (!movingPiece.odd) {
-          if (isRight) {
-            grabEnemy = [
-              (pieces[movingPieceX - 1][movingPieceY + 1] = undefined),
-            ];
-          } else {
-            grabEnemy = [
-              (pieces[movingPieceX - 1][movingPieceY - 1] = undefined),
-            ];
-          }
-          setSecondPlayerScore(secondPlayerScore + 1);
-        }
-
-        const newPieces = movePiece(
-          moveToX,
-          moveToY,
-          movingPiece,
-          movingPieceX,
-          movingPieceY
-        );
-
-        setBoardPieces([...newPieces, grabEnemy]);
         setFirstPlayerTurn(!isFirstPlayerTurn);
+        checkWinner(newPieces);
       }
+
       setMovingPiece(null);
     },
     [
@@ -292,6 +235,30 @@ export const Board = () => {
     ]
   );
 
+  const checkWinner = useCallback(
+    (pieces: any[][]) => {
+      const firstPlayerPieces = pieces
+        .flat()
+        .filter((piece: PieceProps) => piece && piece?.odd);
+      const secondPlayerPieces = pieces
+        .flat()
+        .filter((piece: PieceProps) => piece && !piece.odd);
+
+      if (firstPlayerPieces.length === 0) {
+        setWinner({
+          isWinner: true,
+          winnerText: `Second Player Wins`,
+        });
+      } else if (secondPlayerPieces.length === 0) {
+        setWinner({
+          isWinner: true,
+          winnerText: `First Player Wins`,
+        });
+      }
+    },
+    [pieces]
+  );
+
   const handleCancelDrag = () => {
     setMovingPiece(null);
   };
@@ -303,6 +270,7 @@ export const Board = () => {
     setSecondPlayerScore(0);
     setFirstPlayerTurn(true);
     setMovingPiece(null);
+    setWinner(null);
   };
 
   return (
@@ -340,15 +308,13 @@ export const Board = () => {
               );
             }
 
-            const pieceMarkup = disabled ? (
-              <Piece {...piece} disabled />
-            ) : (
-              <DraggablePiece {...piece} />
-            );
-
             return (
               <Cell key={eachCol.id} {...eachCol}>
-                {pieceMarkup}
+                {disabled ? (
+                  <Piece {...piece} disabled />
+                ) : (
+                  <DraggablePiece {...piece} />
+                )}
               </Cell>
             );
           });
@@ -356,12 +322,16 @@ export const Board = () => {
       </BoardConatiner>
       <DragOverlay dropAnimation={null}>
         {movingPiece === null ? null : (
-          <Piece odd={movingPiece?.odd} clone id={movingPiece.id} />
+          <Piece
+            odd={movingPiece.odd}
+            clone
+            king={movingPiece.king}
+            id={movingPiece.id}
+          />
         )}
       </DragOverlay>
-      <button className="restart" id="reset" onClick={resetGame}>
-        Start a new Game
-      </button>
+      <RestartGameButton resetGame={resetGame} />
+      {winner?.isWinner && <Modal winner={winner} resetGame={resetGame} />}
     </DndContext>
   );
 };

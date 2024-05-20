@@ -1,4 +1,5 @@
 import { useDroppable } from "@dnd-kit/core";
+
 interface EachCellProps {
   children?: React.ReactNode;
   id: string;
@@ -16,7 +17,7 @@ export const Cell = ({
   y,
   children,
 }: EachCellProps) => {
-  const { isOver, setNodeRef } = useDroppable({ id: id });
+  const { setNodeRef } = useDroppable({ id: id });
 
   return (
     <div
@@ -24,7 +25,7 @@ export const Cell = ({
       className={`${
         odd ? "bg-amber-700" : "bg-amber-200"
       } w-20 h-20 flex justify-center items-center ${
-        validMove === true ? "border-green-600 border-4" : ""
+        validMove && "border-green-600 border-4"
       }`}
       data-x={x}
       data-y={y}

@@ -38,6 +38,7 @@ export const generateBoardPieces = (board: PlayBoard[][]) => {
           id: `${x}-${y}`,
           position: { x, y },
           disabled: false,
+          king: false,
         };
       }
     }
