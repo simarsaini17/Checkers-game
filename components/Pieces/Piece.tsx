@@ -7,11 +7,12 @@ export type PieceProps = {
   position?: { x: number; y: number };
   disabled?: boolean;
   isDragging?: boolean;
+  king: boolean;
   children?: React.ReactNode;
 };
 
 export const Piece = forwardRef<HTMLElement, PieceProps>(function Piece(
-  { id, odd, clone, disabled, position, isDragging, children, ...rest },
+  { id, odd, clone, disabled, position, king, isDragging, children, ...rest },
   ref
 ) {
   return (
@@ -28,6 +29,7 @@ export const Piece = forwardRef<HTMLElement, PieceProps>(function Piece(
       disabled={disabled}
       {...rest}
     >
+      {king && <p className="text-slate-500">KING</p>}
       {children}
     </button>
   );
