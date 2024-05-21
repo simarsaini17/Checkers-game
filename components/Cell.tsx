@@ -24,9 +24,9 @@ export const Cell = ({
       ref={setNodeRef}
       className={`${
         odd ? "bg-amber-700" : "bg-amber-200"
-      } w-20 h-20 flex justify-center items-center ${
+      } md:w-20 md:h-20 flex justify-center items-center ${
         validMove && "border-green-600 border-4"
-      }`}
+      } w-10 h-10`}
       data-x={x}
       data-y={y}
     >

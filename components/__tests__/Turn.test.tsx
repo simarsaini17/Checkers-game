@@ -12,7 +12,7 @@ describe("Score Board Component", () => {
 
   it("display correct player turn", () => {
     const currentPlayer = screen.getByTestId("player-turn");
-    expect(currentPlayer).toHaveTextContent("Black Turn");
-    expect(currentPlayer).not.toHaveTextContent("Pink Turn");
+    expect(currentPlayer).toHaveTextContent("Black's Turn");
+    expect(currentPlayer).not.toHaveTextContent("Pink's Turn");
   });
 });

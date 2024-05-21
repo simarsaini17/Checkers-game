@@ -1,4 +1,8 @@
-import { PieceProps } from "../Pieces/Piece";
+import { Piece, PieceProps } from "../Pieces/Piece";
+
+const checkPieceWithinBound = (x: number, y: number): boolean => {
+  return x >= 0 && x <= 7 && y >= 0 && y <= 7;
+};
 
 export const checkValidMove = (
   isFirstPlayerTurn: boolean,
@@ -38,21 +42,29 @@ export const checkValidMove = (
 
     // Check regular moves
     for (let move of moves) {
-      if (moveX === move.x && moveY === move.y && !pieces[move.x]?.[move.y]) {
+      if (
+        moveX === move.x &&
+        moveY === move.y &&
+        !pieces[move.x]?.[move.y] &&
+        checkPieceWithinBound(moveX, moveY)
+      ) {
         return { canMove: true };
       }
     }
 
+    // check for capture moves
     for (let capture of captures) {
       const midX = (moveFromX + capture.x) / 2;
       const midY = (moveFromY + capture.y) / 2;
       const midPiece = pieces[midX]?.[midY];
+
       if (
         moveX === capture.x &&
         moveY === capture.y &&
         midPiece &&
         midPiece.odd !== isFirstPlayerPiece &&
-        !pieces[capture.x]?.[capture.y]
+        !pieces[capture.x]?.[capture.y] &&
+        checkPieceWithinBound(capture.x, capture.y)
       ) {
         return { canMove: true, canRemove: true, midX, midY };
       }

@@ -19,7 +19,7 @@ export const Piece = forwardRef<HTMLElement, PieceProps>(function Piece(
     <button
       className={`${
         odd ? "bg-black border-slate-700 " : "bg-red-300 border-gray-300 "
-      } w-16 h-16 border-4 rounded-full shadow-lg shadow-current cursor-grabbing ${
+      } w-8 h-8 md:w-16 md:h-16 border-4 rounded-full shadow-lg shadow-current cursor-grabbing ${
         isDragging && "opacity-50"
       } ${disabled && "pointer-events-none"}`}
       ref={ref as any}

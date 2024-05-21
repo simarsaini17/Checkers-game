@@ -12,7 +12,7 @@ export const Turn = ({ isFirstPlayerTurn }: TurnProps): JSX.Element => {
         } rounded-full border-4 `}
       />
       <p data-testid="player-turn" className="text-amber-500">
-        {isFirstPlayerTurn ? "Black Turn" : "Pink Turn"}
+        {isFirstPlayerTurn ? "'Black's Turn" : "Pink's Turn"}
       </p>
     </div>
   );

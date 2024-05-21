@@ -27,7 +27,7 @@ describe("Board Component", () => {
 
   test("isValidMove identifies a valid capture move for a regular piece", () => {
     pieces[3][2] = {
-      id: "piece1",
+      id: "3-2",
       odd: false,
       king: false,
       position: { x: 3, y: 2 },
@@ -38,5 +38,11 @@ describe("Board Component", () => {
     expect(validMove.canRemove).toBe(true);
     expect(validMove.midX).toBe(3);
     expect(validMove.midY).toBe(2);
+  });
+
+  test("check if piece moving to position is within bounds", () => {
+    const movingPiece = pieces[1][0] as PieceProps;
+    const validMove = checkValidMove(true, true, movingPiece, pieces, 2, -1);
+    expect(validMove.canMove).toBe(false);
   });
 });

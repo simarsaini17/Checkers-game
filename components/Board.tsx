@@ -13,7 +13,7 @@ import { DraggablePiece } from "./Pieces/DraggablePiece";
 import { ScoreBoard } from "./ScoreBoard";
 import { Turn } from "./Turn";
 import { RestartGameButton } from "./Button/RestartGameButton";
-import { Modal } from "./Modal";
+import { WinnerModal } from "./WinnerModal";
 import { checkValidMove } from "./utils/playersMove";
 
 export type winnerType = {
@@ -94,26 +94,23 @@ export const Board = (): JSX.Element => {
     }
   };
 
-  const checkWinner = useCallback((pieces: any[][]) => {
-    const firstPlayerPieces = pieces
-      .flat()
-      .filter((piece: PieceProps) => piece && piece?.odd);
-    const secondPlayerPieces = pieces
-      .flat()
-      .filter((piece: PieceProps) => piece && !piece.odd);
+  const checkWinner = useCallback(
+    (pieces: PieceProps[][]) => {
+      const firstPlayerPieces = pieces
+        .flat()
+        .filter((piece: PieceProps) => piece && piece?.odd);
+      const secondPlayerPieces = pieces
+        .flat()
+        .filter((piece: PieceProps) => piece && !piece.odd);
 
-    if (firstPlayerPieces.length === 0) {
-      setWinner({
-        isWinner: true,
-        winnerText: `Second Player Wins`,
-      });
-    } else if (secondPlayerPieces.length === 0) {
-      setWinner({
-        isWinner: true,
-        winnerText: `First Player Wins`,
-      });
-    }
-  }, []);
+      if (firstPlayerPieces.length === 0) {
+        return setWinner({ isWinner: true, winnerText: "Pink Wins" });
+      } else if (secondPlayerPieces.length === 0) {
+        return setWinner({ isWinner: true, winnerText: "Black Wins" });
+      }
+    },
+    [setWinner]
+  );
 
   const handleDragFinished = useCallback(
     (event: DragEndEvent) => {
@@ -187,13 +184,14 @@ export const Board = (): JSX.Element => {
               ...movingPiece,
               position: { x: moveToX, y: moveToY },
             });
+
             setBoardPieces(newPieces);
             return;
           }
         }
 
-        setBoardPieces(newPieces);
         setFirstPlayerTurn(!isFirstPlayerTurn);
+        setBoardPieces(newPieces);
         checkWinner(newPieces);
       }
 
@@ -231,11 +229,15 @@ export const Board = (): JSX.Element => {
       onDragEnd={handleDragFinished}
       onDragCancel={handleCancelDrag}
     >
+      {winner?.isWinner && (
+        <div className="fixed w-full h-full bg-black/[0.6]"></div>
+      )}
       <Turn isFirstPlayerTurn={isFirstPlayerTurn} />
       <ScoreBoard
         firstPlayerScore={firstPlayerScore}
         secondPlayerScore={secondPlayerScore}
       />
+
       <BoardConatiner>
         {board.map((eachRow, x) => {
           return eachRow.map((eachCol, y) => {
@@ -281,8 +283,11 @@ export const Board = (): JSX.Element => {
           />
         )}
       </DragOverlay>
+
       <RestartGameButton resetGame={resetGame} />
-      {winner?.isWinner && <Modal winner={winner} resetGame={resetGame} />}
+      {winner?.isWinner && (
+        <WinnerModal winner={winner} resetGame={resetGame} />
+      )}
     </DndContext>
   );
 };
